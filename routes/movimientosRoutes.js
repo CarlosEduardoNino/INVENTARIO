@@ -35,7 +35,7 @@ router.post("/",[
 ], postMovimientos);
 
 //actualizar un movimiento
-router.put("/actualizar/:ide",[
+router.put("/actualizar/",[
     validarJWT,
     check("ide","el id no es valido").isMongoId(),
     check("ide","el id no existe").custom(helperMovimientos.validarId),
@@ -48,7 +48,7 @@ router.get("/movimientos",[
 ], getMovimientos);
 
 //traer un movimiento por id
-router.get("/movimiento/:id",[
+router.get("/movimiento/",[
     validarJWT,
     check("id","el id no es valido").isMongoId(),
     check("id","el id no existe").custom(helperMovimientos.validarId),
@@ -61,7 +61,7 @@ router.get("/movimientos/:accion",[
 ], getActivosinactivos);
 
 //activar o inactivar un movimiento
-router.put("/:accion/:id",[
+router.put("/:accion/",[
     validarJWT,
     check("id","el id no es valido").isMongoId(),
     check("id","el id no existe").custom(helperMovimientos.validarId),
