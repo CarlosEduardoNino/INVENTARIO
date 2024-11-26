@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+app.use(express.static('public'));
 app.use('/api/Articulos', articulos);
 app.use('/api/Categorias', categorias);
 app.use('/api/Movimientos', movimientos);
