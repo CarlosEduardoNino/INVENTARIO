@@ -5,14 +5,14 @@ const MovimientosSchema = new mongoose.Schema({
     numeroFactura:{type:String, required: true},
     fecha:{type:Date, required: true},
     articulos:[{
-        id:{type:mongoose.Schema.Types.ObjectId, required: true, ref:"articulos " },
+        id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Articulos" }, 
         cantidad:{type:Number, required: true},
         precio:{type:Number, required: true}
     }],
     valor:{type:Number, required: true}, 
     iva:{type:Number, required: true},
     total:{type:Number, required: true},
-    estado:{type:Number, required: true, default:1}  // 1:activo 0:inactivo
+    estado: { type: String, default: '1', enum: ['1', '0'] }   // 1:activo 0:inactivo
 }, {
     timestamps: true
 });

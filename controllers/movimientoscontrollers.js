@@ -6,18 +6,24 @@ export const postMovimientos = async (req, res) => {
             tipo,
             numeroFactura,
             fecha,
-            articulos: [{ id, cantidad, precio }],
+            articulos,
             valor,
             iva,
             total,
             estado,
         } = req.body;
 
+        // Validar que articulos sea un array
+        if (!Array.isArray(articulos) || articulos.length === 0) {
+            return res.status(400).json({ error: "El movimiento debe tener al menos un artículo." });
+        }
+
+        // Crear el documento
         const movimiento = new movimientosModel({
             tipo,
             numeroFactura,
             fecha,
-            articulos: [{ id, cantidad, precio }],
+            articulos, // Aquí ya llega como un array
             valor,
             iva,
             total,
@@ -27,10 +33,10 @@ export const postMovimientos = async (req, res) => {
         await movimiento.save();
         res.json({ movimiento });
     } catch (error) {
-        console.error("Error al registrar un movimiento:", error); // Mostrar el error en consola
+        console.error("Error al registrar un movimiento:", error);
         res.status(400).json({ 
             error: "Hubo un error al registrar un nuevo movimiento",
-            details: error.message || error // Incluir detalles del error
+            details: error.message || error
         });
     }
 };
@@ -38,43 +44,44 @@ export const postMovimientos = async (req, res) => {
 
 export const putMovimientos = async (req, res) => {
     try {
-        const { ide } = req.params
-        const { tipo,
-            numeroFactura,
-            fecha,
-            articulos: [{ id, cantidad, precio }]
-            ,
-            valor,
-            iva,
-            total,
-            estado, } = req.body
-        const movimiento = await movimientosModel.findByIdAndUpdate(ide, {
-            tipo,
-            numeroFactura,
-            fecha,
-            articulos: [{ id, cantidad, precio }]
-,
-            valor,
-            iva,
-            total,
-            estado
-        }, { new: true })
-        res.json({ movimiento })
+        const { id } = req.params; 
+        const { 
+            tipo, 
+            numeroFactura, 
+            fecha, 
+            articulos, 
+            valor, 
+            iva, 
+            total, 
+            estado 
+        } = req.body;
+
+        const movimiento = await movimientosModel.findByIdAndUpdate(
+            id,
+            { tipo, numeroFactura, fecha, articulos, valor, iva, total, estado },
+            { new: true }
+        );
+
+        if (!movimiento) {
+            return res.status(404).json({ error: "Movimiento no encontrado" });
+        }
+
+        res.json({ movimiento });
     } catch (error) {
-        res.status(400).json({ error: "parece que hubo un error en la actualizacion del movimiento" })
-        console.log(error);
+        console.error("Error al actualizar el movimiento:", error);
+        res.status(400).json({ error: "Error al actualizar el movimiento", details: error.message });
     }
-}
+};
 
 export const getMovimientos = async (req, res) => {
     try {
-        const movimientos = await movimientosModel.find()
-        res.json({ movimientos })
+        const movimientos = await movimientosModel.find().populate('articulos.id');
+        res.json({ movimientos });
     } catch (error) {
-        res.status(400).json({ error: "parece que hubo un error  al traer todos los movimientos" })
-        console.log(error);
+        console.error("Error al obtener movimientos:", error);
+        res.status(400).json({ error: "Parece que hubo un error al traer todos los movimientos" });
     }
-}
+};
 
 export const getMovimiento = async (req, res) => {
     try {
@@ -104,62 +111,67 @@ export const getActivosinactivos = async (req, res) => {
 
 export const putActivarInactivar = async (req, res) => {
     try {
-        const { accion } = req.params
-        const { id } = req.params
-        if (accion == "activar") {
-            const movimiento = await movimientosModel.findByIdAndUpdate(id, { estado: 1 }, { new: true })
-            res.json({ movimiento })
+        const movimientos = await movimientosModel.findById(req.params.id);
+        if (!movimientos) {
+            return res.status(404).json({ message: 'Artículo no encontrado' });
         }
-        else if (accion == "inactivar") {
-            const movimiento = await movimientosModel.findByIdAndUpdate(id, { estado: 0 }, { new: true })
-            res.json({ movimiento })
-        }
+        
+      
+        movimientos.estado = movimientos.estado === '1' ? '0' : '1';
+        await movimientos.save();
+        
+        res.status(200).json(movimientos);
     } catch (error) {
-        res.status(400).json({ error: "parece que hubo un error al hacer la operacion" })
-        console.log(error);
+        res.status(500).json({ message: 'Error al cambiar el estado del artículo', error });
     }
 }
 
 export const getMovimientoTipo = async (req, res) => {
     try {
-        const { tipo } = req.params
-        if (tipo == "entradas" || tipo == 1) {
-            const entradas = await movimientosModel.find({ tipo: 1 })
-            res.json({ entradas })
-        }
-        else if (tipo == "salidas" || tipo == 2) {
-            const salidas = await movimientosModel.find({ tipo: 2 })
-            res.json({ salidas })
-        }
-        else if (tipo == "devolucion Entrada" || tipo == 3) {
-            const devolucionesEntrada = await movimientosModel.find({ tipo: 3 })
-            res.json({ devolucionesEntrada })
-        }
-        else if (tipo == "devolucion salida" || tipo == 4) {
-            const devolucionesSalida = await movimientosModel.find({ tipo: 4 })
-            res.json({ devolucionesSalida })
-        }
-    } catch (error) {
-        res.status(400).json({ error: "hubo un error al realizar la operacion" })
-        console.log(error);
-    }
-}
+        const tipos = {
+            entradas: 1,
+            salidas: 2,
+            "devolucion Entrada": 3,
+            "devolucion salida": 4,
+        };
 
-export const getMovimientosFechas = async (req, res)=>{
-    try {
-        const  {fechaInicio, fechaFin}  = req.params
-        const  movimientos = await movimientosModel.find({
-            fecha:{
-                $gte:new Date(fechaInicio),
-                $lte:new Date(fechaFin)
-            }
-        })
-        res.json({movimientos})
+        const tipoKey = req.params.tipo;
+        const tipoValue = tipos[tipoKey] || parseInt(tipoKey);
+
+        if (!tipoValue) {
+            return res.status(400).json({ error: "Tipo inválido" });
+        }
+
+        const movimientos = await movimientosModel.find({ tipo: tipoValue });
+        res.json({ movimientos });
     } catch (error) {
-        res.status(400).json({error:"error al realizar la operacion"})
-        console.log(error);
+        console.error("Error al obtener movimientos por tipo:", error);
+        res.status(400).json({ error: "Hubo un error al realizar la operación" });
     }
-}
+};
+
+
+export const getMovimientosFechas = async (req, res) => {
+    try {
+        const { fechaInicio, fechaFin } = req.params;
+        const inicio = new Date(fechaInicio);
+        const fin = new Date(fechaFin);
+
+        if (isNaN(inicio) || isNaN(fin)) {
+            return res.status(400).json({ error: "Fechas inválidas" });
+        }
+
+        const movimientos = await movimientosModel.find({
+            fecha: { $gte: inicio, $lte: fin },
+        });
+
+        res.json({ movimientos });
+    } catch (error) {
+        console.error("Error al obtener movimientos por fechas:", error);
+        res.status(400).json({ error: "Error al realizar la operación" });
+    }
+};
+
 
 export default {
     postMovimientos,

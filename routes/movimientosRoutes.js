@@ -25,8 +25,6 @@ router.post("/",[
     check("numeroFactura","la factura debe ser un texto").isString(),
     check("fecha","el formato de la fecha es incorrecto").isString(),
     check("articulos","articulos debe ser un array").isArray(),
-    check("articulos.*.id","el id no es valido").isMongoId(),
-    check("articulos.*.id","el id no existe"),
     check("articulos.*.cantidad","cantidad debe ser un numero").isNumeric(),
     check("valor","debe ser un valor numerico").isNumeric(),
     check("total","debe ser un valor numerico").isNumeric(),
@@ -35,10 +33,10 @@ router.post("/",[
 ], postMovimientos);
 
 //actualizar un movimiento
-router.put("/actualizar/",[
+router.put("/:id",[
     validarJWT,
-    check("ide","el id no es valido").isMongoId(),
-    check("ide","el id no existe").custom(helperMovimientos.validarId),
+    check("id","el id no es valido").isMongoId(),
+    check("id","el id no existe").custom(helperMovimientos.validarId),
     validarCampos
 ],putMovimientos);
 
@@ -61,7 +59,7 @@ router.get("/movimientos/:accion",[
 ], getActivosinactivos);
 
 //activar o inactivar un movimiento
-router.put("/:accion/",[
+router.put("/estado/:id",[
     validarJWT,
     check("id","el id no es valido").isMongoId(),
     check("id","el id no existe").custom(helperMovimientos.validarId),
